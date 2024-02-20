@@ -23,8 +23,8 @@ public class Main extends JavaPlugin implements Listener {
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("ABMCWorldNotify has been enabled!");
-        saveDefaultConfig(); 
-        initNextResetTime(); 
+        saveDefaultConfig();
+        initNextResetTime();
     }
 
     @Override
@@ -38,7 +38,7 @@ public class Main extends JavaPlugin implements Listener {
         World world = player.getWorld();
         String worldName = world.getName();
 
-        if (worldName.equalsIgnoreCase("resource") || worldName.equalsIgnoreCase("world_nether")) {
+        if (worldName.equalsIgnoreCase("resource") || worldName.equalsIgnoreCase("world_nether") || worldName.equalsIgnoreCase("world_the_end")) {
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -62,7 +62,7 @@ public class Main extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         World toWorld = event.getTo().getWorld();
 
-        if (toWorld != null && (toWorld.getName().equalsIgnoreCase("resource") || toWorld.getName().equalsIgnoreCase("world_nether"))) {
+        if (toWorld != null && (toWorld.getName().equalsIgnoreCase("resource") || toWorld.getName().equalsIgnoreCase("world_nether") || toWorld.getName().equalsIgnoreCase("world_the_end"))) {
             sendEnterWorldMessage(player, toWorld.getName());
         }
     }
@@ -80,9 +80,9 @@ public class Main extends JavaPlugin implements Listener {
         Duration duration = Duration.between(LocalDateTime.now(), nextResetTime);
         long daysUntilReset = duration.toDays();
         long hoursPart = duration.minusDays(daysUntilReset).toHours();
-        long minutesPart = duration.minusDays(daysUntilReset).minusHours(hoursPart).toMinutes(); 
+        long minutesPart = duration.minusDays(daysUntilReset).minusHours(hoursPart).toMinutes();
 
-        String worldDisplayName = "resource".equals(worldName) ? "Resource World" : "Nether World";
+        String worldDisplayName = getWorldDisplayName(worldName);
         player.sendTitle(
                 ChatColor.GREEN + worldDisplayName,
                 ChatColor.YELLOW + "Resets in " + daysUntilReset + " days, " + hoursPart + " hours, " + minutesPart + " minutes",
@@ -91,14 +91,14 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     private void sendEnterWorldMessage(Player player, String worldName) {
-        String worldDisplayName = "resource".equals(worldName) ? "Resource World" : "Nether World";
+        String worldDisplayName = getWorldDisplayName(worldName);
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(ChatColor.GREEN + "Entering " + worldDisplayName));
     }
 
     private void initNextResetTime() {
-        initWorldResetTime("resource", 14); 
-        initWorldResetTime("world_nether", 30); 
-        initWorldResetTime("world_the_end", 14); 
+        initWorldResetTime("resource", 14);
+        initWorldResetTime("world_nether", 30);
+        initWorldResetTime("world_the_end", 30);
     }
 
     private void initWorldResetTime(String worldName, long daysUntilReset) {
@@ -123,7 +123,7 @@ public class Main extends JavaPlugin implements Listener {
             return nextResetTime;
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Failed to parse next reset time for " + worldName + ", resetting.", e);
-            long daysToAdd = "resource".equals(worldName) ? 14 : 30;
+            long daysToAdd = "resource".equals(worldName) ? 14 : 30; 
             LocalDateTime newResetTime = LocalDateTime.now().plusDays(daysToAdd);
             setNextResetTime(worldName, newResetTime);
             return newResetTime;
@@ -135,5 +135,18 @@ public class Main extends JavaPlugin implements Listener {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         getConfig().set(path, time.format(formatter));
         saveConfig();
+    }
+
+    private String getWorldDisplayName(String worldName) {
+        switch (worldName.toLowerCase()) {
+            case "resource":
+                return "Resource World";
+            case "world_nether":
+                return "Nether World";
+            case "world_the_end":
+                return "End World";
+            default:
+                return "World";
+        }
     }
 }
