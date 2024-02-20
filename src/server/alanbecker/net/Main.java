@@ -84,7 +84,7 @@ public class Main extends JavaPlugin implements Listener {
 
         String worldDisplayName = getWorldDisplayName(worldName);
         player.sendTitle(
-                ChatColor.GREEN + worldDisplayName,
+                worldDisplayName,
                 ChatColor.YELLOW + "Resets in " + daysUntilReset + " days, " + hoursPart + " hours, " + minutesPart + " minutes",
                 10, 70, 20
         );
@@ -92,7 +92,7 @@ public class Main extends JavaPlugin implements Listener {
 
     private void sendEnterWorldMessage(Player player, String worldName) {
         String worldDisplayName = getWorldDisplayName(worldName);
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(ChatColor.GREEN + "Entering " + worldDisplayName));
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(worldDisplayName + ChatColor.GREEN + ""));
     }
 
     private void initNextResetTime() {
@@ -123,7 +123,7 @@ public class Main extends JavaPlugin implements Listener {
             return nextResetTime;
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Failed to parse next reset time for " + worldName + ", resetting.", e);
-            long daysToAdd = "resource".equals(worldName) ? 14 : 30; 
+            long daysToAdd = "resource".equals(worldName) ? 14 : 30;
             LocalDateTime newResetTime = LocalDateTime.now().plusDays(daysToAdd);
             setNextResetTime(worldName, newResetTime);
             return newResetTime;
@@ -138,15 +138,10 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     private String getWorldDisplayName(String worldName) {
-        switch (worldName.toLowerCase()) {
-            case "resource":
-                return "Resource World";
-            case "world_nether":
-                return "Nether World";
-            case "world_the_end":
-                return "End World";
-            default:
-                return "World";
+        String path = "worlds." + worldName.toLowerCase();
+        if (getConfig().contains(path)) {
+            return ChatColor.translateAlternateColorCodes('&', getConfig().getString(path + ".color")) + getConfig().getString(path + ".displayName");
         }
+        return "World";
     }
 }
