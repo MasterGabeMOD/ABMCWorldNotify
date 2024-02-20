@@ -36,8 +36,9 @@ public class Main extends JavaPlugin implements Listener {
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
         Player player = event.getPlayer();
         World world = player.getWorld();
+        String worldName = world.getName();
 
-        if (world.getName().equalsIgnoreCase("resource")) {
+        if (worldName.equalsIgnoreCase("resource") || worldName.equalsIgnoreCase("world_nether")) {
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -48,11 +49,11 @@ public class Main extends JavaPlugin implements Listener {
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    sendResetMessage(player);
+                    sendResetMessage(player, worldName);
                 }
             }.runTaskLater(this, 120L);
 
-            sendEnterWorldMessage(player);
+            sendEnterWorldMessage(player, worldName);
         }
     }
 
@@ -61,8 +62,8 @@ public class Main extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         World toWorld = event.getTo().getWorld();
 
-        if (toWorld != null && toWorld.getName().equalsIgnoreCase("resource")) {
-            sendEnterWorldMessage(player);
+        if (toWorld != null && (toWorld.getName().equalsIgnoreCase("resource") || toWorld.getName().equalsIgnoreCase("world_nether"))) {
+            sendEnterWorldMessage(player, toWorld.getName());
         }
     }
 
@@ -74,46 +75,65 @@ public class Main extends JavaPlugin implements Listener {
         );
     }
 
-    private void sendResetMessage(Player player) {
-        LocalDateTime nextResetTime = getNextResetTime();
+    private void sendResetMessage(Player player, String worldName) {
+        LocalDateTime nextResetTime = getNextResetTime(worldName);
         Duration duration = Duration.between(LocalDateTime.now(), nextResetTime);
         long daysUntilReset = duration.toDays();
         long hoursPart = duration.minusDays(daysUntilReset).toHours();
         long minutesPart = duration.minusDays(daysUntilReset).minusHours(hoursPart).toMinutes(); 
 
+        String worldDisplayName = "resource".equals(worldName) ? "Resource World" : "Nether World";
         player.sendTitle(
-                ChatColor.GREEN + "Resource World",
-                ChatColor.YELLOW + "Resets in " + daysUntilReset + " days, " + hoursPart + " hours " + minutesPart + " minutes",
+                ChatColor.GREEN + worldDisplayName,
+                ChatColor.YELLOW + "Resets in " + daysUntilReset + " days, " + hoursPart + " hours, " + minutesPart + " minutes",
                 10, 70, 20
         );
     }
 
-    private void sendEnterWorldMessage(Player player) {
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(ChatColor.GREEN + "Entering Resource World"));
+    private void sendEnterWorldMessage(Player player, String worldName) {
+        String worldDisplayName = "resource".equals(worldName) ? "Resource World" : "Nether World";
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(ChatColor.GREEN + "Entering " + worldDisplayName));
     }
 
     private void initNextResetTime() {
-        if (!getConfig().contains("nextResetTime")) {
-            setNextResetTime(LocalDateTime.now().plusDays(14)); 
+        initWorldResetTime("resource", 14); 
+        initWorldResetTime("world_nether", 30); 
+        initWorldResetTime("world_the_end", 14); 
+    }
+
+    private void initWorldResetTime(String worldName, long daysUntilReset) {
+        String path = worldName + ".nextResetTime";
+        if (!getConfig().contains(path)) {
+            setNextResetTime(worldName, LocalDateTime.now().plusDays(daysUntilReset));
         }
     }
 
-    private LocalDateTime getNextResetTime() {
-        String timeStr = getConfig().getString("nextResetTime", "");
+    private LocalDateTime getNextResetTime(String worldName) {
+        String path = worldName + ".nextResetTime";
+        String timeStr = getConfig().getString(path, "");
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         try {
-            return LocalDateTime.parse(timeStr, formatter);
+            LocalDateTime nextResetTime = LocalDateTime.parse(timeStr, formatter);
+            if (LocalDateTime.now().isAfter(nextResetTime)) {
+                long daysToAdd = "resource".equals(worldName) ? 14 : 30;
+                LocalDateTime newResetTime = LocalDateTime.now().plusDays(daysToAdd);
+                setNextResetTime(worldName, newResetTime);
+                return newResetTime;
+            }
+            return nextResetTime;
         } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Failed to parse next reset time, resetting to 14 days from now.", e);
-            LocalDateTime nextReset = LocalDateTime.now().plusDays(14);
-            setNextResetTime(nextReset);
-            return nextReset;
+            getLogger().log(Level.WARNING, "Failed to parse next reset time for " + worldName + ", resetting.", e);
+            long daysToAdd = "resource".equals(worldName) ? 14 : 30;
+            LocalDateTime newResetTime = LocalDateTime.now().plusDays(daysToAdd);
+            setNextResetTime(worldName, newResetTime);
+            return newResetTime;
         }
     }
 
-    private void setNextResetTime(LocalDateTime time) {
+    private void setNextResetTime(String worldName, LocalDateTime time) {
+        String path = worldName + ".nextResetTime";
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-        getConfig().set("nextResetTime", time.format(formatter));
+        getConfig().set(path, time.format(formatter));
         saveConfig();
     }
 }
