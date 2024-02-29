@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 
-public class Main extends JavaPlugin implements Listener {
+public class Notify extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {

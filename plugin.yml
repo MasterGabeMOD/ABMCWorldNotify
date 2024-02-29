@@ -1,5 +1,5 @@
 name: ABMCWorldNotify
-main: server.alanbecker.net.Main
+main: server.alanbecker.net.Notify
 author: MasterGabeMOD
 version: 1.0
-api-version: 1.17
+api-version: 1.19
