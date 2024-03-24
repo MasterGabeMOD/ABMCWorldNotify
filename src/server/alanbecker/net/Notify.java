@@ -2,6 +2,9 @@ package server.alanbecker.net;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,7 +20,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 
-public class Notify extends JavaPlugin implements Listener {
+public class Notify extends JavaPlugin implements Listener, CommandExecutor {
 
     @Override
     public void onEnable() {
@@ -25,6 +28,7 @@ public class Notify extends JavaPlugin implements Listener {
         getLogger().info("ABMCWorldNotify has been enabled!");
         saveDefaultConfig();
         initNextResetTime();
+        this.getCommand("worldnotify").setExecutor(this);
     }
 
     @Override
@@ -143,5 +147,19 @@ public class Notify extends JavaPlugin implements Listener {
             return ChatColor.translateAlternateColorCodes('&', getConfig().getString(path + ".color")) + getConfig().getString(path + ".displayName");
         }
         return "World";
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+            if (sender.hasPermission("worldnotify.reload")) {
+                reloadConfig();
+                sender.sendMessage(ChatColor.GREEN + "Configuration reloaded.");
+            } else {
+                sender.sendMessage(ChatColor.RED + "You do not have permission to execute this command.");
+            }
+            return true;
+        }
+        return false;
     }
 }
